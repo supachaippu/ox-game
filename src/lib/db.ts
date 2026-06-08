@@ -47,13 +47,68 @@ function getDB() {
   return null;
 }
 
-class CloudflareDB {
-  // In-Memory Fallback สำหรับการทดสอบในเครื่องแบบด่วน (npm run dev)
-  private static localUsers = new Map<string, User>();
-  private static localScores = new Map<string, ScoreRecord>();
-  private static localAuthCodes = new Map<string, AuthCode>();
-  private static localAccessTokens = new Map<string, AccessToken>();
+let fs: any = null;
+let os: any = null;
+let path: any = null;
 
+if (typeof window === 'undefined') {
+  try {
+    const fsName = 'fs';
+    const osName = 'os';
+    const pathName = 'path';
+    fs = require(fsName);
+    os = require(osName);
+    path = require(pathName);
+  } catch (e) {
+    // Edge runtime doesn't have these
+  }
+}
+
+function getFallbackFilePath() {
+  if (fs && os && path) {
+    return path.join(os.tmpdir(), 'ox-game-db-fallback.json');
+  }
+  return '/tmp/ox-game-db-fallback.json';
+}
+
+interface FallbackData {
+  users: Record<string, User>;
+  scores: Record<string, ScoreRecord>;
+  authCodes: Record<string, AuthCode>;
+  accessTokens: Record<string, AccessToken>;
+}
+
+function getFallbackData(): FallbackData {
+  const defaultData: FallbackData = {
+    users: {},
+    scores: {},
+    authCodes: {},
+    accessTokens: {}
+  };
+  if (!fs) return defaultData;
+  try {
+    const filePath = getFallbackFilePath();
+    if (fs.existsSync(filePath)) {
+      const content = fs.readFileSync(filePath, 'utf8');
+      return JSON.parse(content);
+    }
+  } catch (e) {
+    // Ignore error
+  }
+  return defaultData;
+}
+
+function saveFallbackData(data: FallbackData) {
+  if (!fs) return;
+  try {
+    const filePath = getFallbackFilePath();
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+  } catch (e) {
+    // Ignore error
+  }
+}
+
+class CloudflareDB {
   // === ฟังก์ชันจัดการ User ===
   public async getUser(userId: string): Promise<User | undefined> {
     const db = getDB();
@@ -63,7 +118,8 @@ class CloudflareDB {
     }
     
     // Fallback
-    return CloudflareDB.localUsers.get(userId);
+    const data = getFallbackData();
+    return data.users[userId];
   }
 
   public async getOrCreateUser(username: string): Promise<User> {
@@ -89,10 +145,11 @@ class CloudflareDB {
     }
     
     // Fallback
-    let user = CloudflareDB.localUsers.get(userId);
+    const data = getFallbackData();
+    let user = data.users[userId];
     if (!user) {
       user = { id: userId, username: cleanUsername };
-      CloudflareDB.localUsers.set(userId, user);
+      data.users[userId] = user;
       
       const updatedAt = new Date().toISOString();
       const score: ScoreRecord = {
@@ -107,7 +164,8 @@ class CloudflareDB {
         bonusPoints: 0,
         updatedAt
       };
-      CloudflareDB.localScores.set(userId, score);
+      data.scores[userId] = score;
+      saveFallbackData(data);
     }
     return user;
   }
@@ -121,7 +179,8 @@ class CloudflareDB {
     }
     
     // Fallback
-    return CloudflareDB.localScores.get(userId);
+    const data = getFallbackData();
+    return data.scores[userId];
   }
 
   public async getAllScores(): Promise<ScoreRecord[]> {
@@ -132,7 +191,8 @@ class CloudflareDB {
     }
     
     // Fallback
-    const scores = Array.from(CloudflareDB.localScores.values());
+    const data = getFallbackData();
+    const scores = Object.values(data.scores);
     return scores.sort((a, b) => b.score - a.score);
   }
 
@@ -194,7 +254,8 @@ class CloudflareDB {
     }
     
     // Fallback
-    const record = CloudflareDB.localScores.get(userId);
+    const data = getFallbackData();
+    const record = data.scores[userId];
     if (!record) {
       throw new Error(`Score record not found for user: ${userId}`);
     }
@@ -221,7 +282,8 @@ class CloudflareDB {
 
     const updatedAt = new Date().toISOString();
     record.updatedAt = updatedAt;
-    CloudflareDB.localScores.set(userId, record);
+    data.scores[userId] = record;
+    saveFallbackData(data);
     return record;
   }
 
@@ -244,20 +306,24 @@ class CloudflareDB {
     }
     
     // Fallback
+    const data = getFallbackData();
+    
     // ล้างรหัสเก่าที่หมดอายุแล้ว
-    for (const [k, v] of CloudflareDB.localAuthCodes.entries()) {
-      if (v.expiresAt < Date.now()) {
-        CloudflareDB.localAuthCodes.delete(k);
+    const now = Date.now();
+    for (const k of Object.keys(data.authCodes)) {
+      if (data.authCodes[k].expiresAt < now) {
+        delete data.authCodes[k];
       }
     }
 
-    CloudflareDB.localAuthCodes.set(code, {
+    data.authCodes[code] = {
       code,
       userId,
       clientId,
       redirectUri,
       expiresAt
-    });
+    };
+    saveFallbackData(data);
     return code;
   }
 
@@ -277,14 +343,16 @@ class CloudflareDB {
     }
     
     // Fallback
-    const auth = CloudflareDB.localAuthCodes.get(code);
+    const data = getFallbackData();
+    const auth = data.authCodes[code];
     if (!auth) return null;
     
     if (auth.clientId !== clientId || auth.redirectUri !== redirectUri || auth.expiresAt < Date.now()) {
       return null;
     }
     
-    CloudflareDB.localAuthCodes.delete(code);
+    delete data.authCodes[code];
+    saveFallbackData(data);
     return auth.userId;
   }
 
@@ -307,19 +375,23 @@ class CloudflareDB {
     }
     
     // Fallback
+    const data = getFallbackData();
+    
     // ล้างโทเคนที่หมดอายุแล้ว
-    for (const [k, v] of CloudflareDB.localAccessTokens.entries()) {
-      if (v.expiresAt < Date.now()) {
-        CloudflareDB.localAccessTokens.delete(k);
+    const now = Date.now();
+    for (const k of Object.keys(data.accessTokens)) {
+      if (data.accessTokens[k].expiresAt < now) {
+        delete data.accessTokens[k];
       }
     }
 
-    CloudflareDB.localAccessTokens.set(token, {
+    data.accessTokens[token] = {
       token,
       userId,
       clientId,
       expiresAt
-    });
+    };
+    saveFallbackData(data);
     return token;
   }
 
@@ -335,7 +407,8 @@ class CloudflareDB {
     }
     
     // Fallback
-    const accessToken = CloudflareDB.localAccessTokens.get(token);
+    const data = getFallbackData();
+    const accessToken = data.accessTokens[token];
     if (!accessToken || accessToken.expiresAt < Date.now()) {
       return null;
     }
