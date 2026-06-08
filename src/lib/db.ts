@@ -42,7 +42,8 @@ interface DatabaseSchema {
   accessTokens: AccessToken[];
 }
 
-const DB_DIR = path.join(process.cwd(), 'data');
+const IS_VERCEL = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production';
+const DB_DIR = IS_VERCEL ? '/tmp' : path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DB_DIR, 'db.json');
 
 class LocalDB {
@@ -54,27 +55,54 @@ class LocalDB {
 
   // เตรียมไฟล์ข้อมูล JSON
   private initDB() {
-    if (!fs.existsSync(DB_DIR)) {
-      fs.mkdirSync(DB_DIR, { recursive: true });
-    }
-    if (!fs.existsSync(DB_FILE)) {
-      const initialData: DatabaseSchema = {
+    try {
+      if (!fs.existsSync(DB_DIR)) {
+        fs.mkdirSync(DB_DIR, { recursive: true });
+      }
+      if (!fs.existsSync(DB_FILE)) {
+        // ดึงโครงสร้างข้อมูลเริ่มต้นจาก db.json ดั้งเดิมที่ติดไปกับตัวบิลด์
+        const templatePath = path.join(process.cwd(), 'data', 'db.json');
+        let initialData: DatabaseSchema = {
+          users: [],
+          scores: [],
+          authCodes: [],
+          accessTokens: [],
+        };
+
+        if (fs.existsSync(templatePath)) {
+          try {
+            const templateContent = fs.readFileSync(templatePath, 'utf8');
+            initialData = JSON.parse(templateContent);
+          } catch (e) {
+            console.error('Failed to parse template db.json:', e);
+          }
+        }
+
+        fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2), 'utf8');
+        this.cache = initialData;
+      } else {
+        const data = fs.readFileSync(DB_FILE, 'utf8');
+        this.cache = JSON.parse(data);
+      }
+    } catch (error) {
+      console.error('Error initializing database, using in-memory fallback:', error);
+      this.cache = {
         users: [],
         scores: [],
         authCodes: [],
         accessTokens: [],
       };
-      fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2), 'utf8');
-      this.cache = initialData;
     }
   }
 
   // อ่านข้อมูลทั้งหมด
   private read(): DatabaseSchema {
     try {
-      const data = fs.readFileSync(DB_FILE, 'utf8');
-      this.cache = JSON.parse(data);
-      return this.cache!;
+      if (fs.existsSync(DB_FILE)) {
+        const data = fs.readFileSync(DB_FILE, 'utf8');
+        this.cache = JSON.parse(data);
+      }
+      return this.cache || { users: [], scores: [], authCodes: [], accessTokens: [] };
     } catch (error) {
       console.error('Error reading local db, using cache/fallback:', error);
       if (this.cache) return this.cache;
@@ -85,9 +113,14 @@ class LocalDB {
   // เขียนข้อมูลทั้งหมดแบบปลอดภัย
   private write(data: DatabaseSchema) {
     this.cache = data;
-    const tempFile = `${DB_FILE}.tmp`;
-    fs.writeFileSync(tempFile, JSON.stringify(data, null, 2), 'utf8');
-    fs.renameSync(tempFile, DB_FILE);
+    try {
+      const tempFile = `${DB_FILE}.tmp`;
+      fs.writeFileSync(tempFile, JSON.stringify(data, null, 2), 'utf8');
+      fs.renameSync(tempFile, DB_FILE);
+    } catch (error) {
+      console.error('Error writing to database file:', error);
+      // fallback ในหน่วยความจำทำงานต่อได้
+    }
   }
 
   // === ฟังก์ชันจัดการ User ===
