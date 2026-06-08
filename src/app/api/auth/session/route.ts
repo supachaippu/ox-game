@@ -17,7 +17,10 @@ export async function POST(request: Request) {
     const protocol = request.headers.get('x-forwarded-proto') || 'http';
     const baseUrl = `${protocol}://${host}`;
 
-    const hasGitHub = !!(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET);
+    const hasGitHubConfig = !!(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET);
+    // ถ้า code ขึ้นต้นด้วย 'code_' แสดงว่ามาจาก Mock OAuth (Demo Mode) ให้ใช้ Mock Flow
+    const isMockCode = code.startsWith('code_');
+    const hasGitHub = hasGitHubConfig && !isMockCode;
     let userData: { sub: string; username: string };
     let tokenToStore: string;
 
