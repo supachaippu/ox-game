@@ -4,12 +4,14 @@ const { execSync } = require('child_process');
 
 const configPath = path.join(__dirname, '../src/app/api/auth/config/route.ts');
 const sessionPath = path.join(__dirname, '../src/app/api/auth/session/route.ts');
+const devStorePath = path.join(__dirname, '../src/app/api/dev-store/route.ts');
 
-console.log('Injecting GitHub OAuth credentials for Cloudflare Pages build...');
+console.log('Injecting GitHub OAuth credentials and dev-store edge runtime for Cloudflare Pages build...');
 
 // Backup original files
 const configBackup = fs.readFileSync(configPath, 'utf8');
 const sessionBackup = fs.readFileSync(sessionPath, 'utf8');
+const devStoreBackup = fs.readFileSync(devStorePath, 'utf8');
 
 try {
   // Inject into config/route.ts
@@ -40,6 +42,14 @@ try {
   );
   fs.writeFileSync(sessionPath, sessionContent, 'utf8');
 
+  // Inject into dev-store/route.ts (convert runtime to edge)
+  let devStoreContent = devStoreBackup;
+  devStoreContent = devStoreContent.replace(
+    /export const runtime = 'nodejs';/,
+    `export const runtime = 'edge';`
+  );
+  fs.writeFileSync(devStorePath, devStoreContent, 'utf8');
+
   console.log('Building Cloudflare Pages output (next-on-pages)...');
   execSync('npm run open-next', { stdio: 'inherit' });
 
@@ -48,6 +58,7 @@ try {
   console.log('Restoring original code files...');
   fs.writeFileSync(configPath, configBackup, 'utf8');
   fs.writeFileSync(sessionPath, sessionBackup, 'utf8');
+  fs.writeFileSync(devStorePath, devStoreBackup, 'utf8');
 }
 
 console.log('Deploying build output to Cloudflare Pages...');
