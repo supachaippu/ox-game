@@ -46,9 +46,9 @@ export default function Home() {
   }, [router]);
 
   // ฟังก์ชันเริ่มกระบวนการ OAuth 2.0 Authorization Code Flow
-  const handleLogin = () => {
-    const useGitHub = authState?.useGitHub ?? false;
-    const clientId = authState?.clientId ?? 'ox-game-client';
+  const handleLogin = (forceDemo = false) => {
+    const useGitHub = forceDemo ? false : (authState?.useGitHub ?? false);
+    const clientId = useGitHub ? (authState?.clientId ?? '') : 'ox-game-client';
     const redirectUri = `${window.location.origin}/oauth/callback`;
     const state = Math.random().toString(36).substring(2, 15);
     const scope = useGitHub ? 'read:user' : 'profile';
@@ -95,8 +95,14 @@ export default function Home() {
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <button className="btn btn-primary" onClick={handleLogin}>
-            {isGitHubMode ? '🐱 เข้าสู่ระบบด้วย GitHub OAuth' : '⚡ เข้าสู่ระบบเพื่อเริ่มเล่น (Demo Mode)'}
+          {isGitHubMode && (
+            <button className="btn btn-primary" onClick={() => handleLogin(false)}>
+              🐱 เข้าสู่ระบบด้วย GitHub OAuth
+            </button>
+          )}
+          
+          <button className={isGitHubMode ? "btn btn-secondary" : "btn btn-primary"} onClick={() => handleLogin(true)}>
+            🔑 เข้าเล่นด้วยบัญชีทดลอง (Demo Mode)
           </button>
           
           <Link href="/admin" className="btn btn-secondary">
@@ -106,9 +112,9 @@ export default function Home() {
 
         <div style={{ marginTop: '2rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
           {isGitHubMode ? (
-            <span style={{ color: 'var(--color-secondary)' }}>● กำลังใช้ระบบความปลอดภัยเชื่อมต่อกับ GitHub OAuth จริง</span>
+            <span style={{ color: 'var(--color-secondary)' }}>● ระบบพร้อมใช้งาน GitHub OAuth จริง และระบบจำลอง Demo Mode</span>
           ) : (
-            <span>⚡ โหมดสาธิต: ยืนยันตัวตนจำลองภายในตัวแอป (ตั้งค่า .env เพื่อเปิดใช้ GitHub OAuth จริง)</span>
+            <span>⚡ ระบบพร้อมใช้งานในโหมด Demo (ตั้งค่า .env เพื่อเปิดใช้ GitHub OAuth เพิ่มเติม)</span>
           )}
         </div>
       </div>
