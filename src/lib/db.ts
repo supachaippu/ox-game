@@ -47,30 +47,6 @@ function getDB() {
   return null;
 }
 
-let fs: any = null;
-let os: any = null;
-let path: any = null;
-
-if (typeof window === 'undefined') {
-  try {
-    const fsName = 'fs';
-    const osName = 'os';
-    const pathName = 'path';
-    fs = require(fsName);
-    os = require(osName);
-    path = require(pathName);
-  } catch (e) {
-    // Edge runtime doesn't have these
-  }
-}
-
-function getFallbackFilePath() {
-  if (fs && os && path) {
-    return path.join(os.tmpdir(), 'ox-game-db-fallback.json');
-  }
-  return '/tmp/ox-game-db-fallback.json';
-}
-
 interface FallbackData {
   users: Record<string, User>;
   scores: Record<string, ScoreRecord>;
@@ -78,19 +54,20 @@ interface FallbackData {
   accessTokens: Record<string, AccessToken>;
 }
 
-function getFallbackData(): FallbackData {
+async function getFallbackData(): Promise<FallbackData> {
   const defaultData: FallbackData = {
     users: {},
     scores: {},
     authCodes: {},
     accessTokens: {}
   };
-  if (!fs) return defaultData;
   try {
-    const filePath = getFallbackFilePath();
-    if (fs.existsSync(filePath)) {
-      const content = fs.readFileSync(filePath, 'utf8');
-      return JSON.parse(content);
+    const port = process.env.PORT || '3000';
+    const res = await fetch(`http://127.0.0.1:${port}/api/dev-store`, {
+      cache: 'no-store'
+    });
+    if (res.ok) {
+      return await res.json();
     }
   } catch (e) {
     // Ignore error
@@ -98,11 +75,17 @@ function getFallbackData(): FallbackData {
   return defaultData;
 }
 
-function saveFallbackData(data: FallbackData) {
-  if (!fs) return;
+async function saveFallbackData(data: FallbackData): Promise<void> {
   try {
-    const filePath = getFallbackFilePath();
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+    const port = process.env.PORT || '3000';
+    await fetch(`http://127.0.0.1:${port}/api/dev-store`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data),
+      cache: 'no-store'
+    });
   } catch (e) {
     // Ignore error
   }
@@ -118,7 +101,7 @@ class CloudflareDB {
     }
     
     // Fallback
-    const data = getFallbackData();
+    const data = await getFallbackData();
     return data.users[userId];
   }
 
@@ -145,7 +128,7 @@ class CloudflareDB {
     }
     
     // Fallback
-    const data = getFallbackData();
+    const data = await getFallbackData();
     let user = data.users[userId];
     if (!user) {
       user = { id: userId, username: cleanUsername };
@@ -165,7 +148,7 @@ class CloudflareDB {
         updatedAt
       };
       data.scores[userId] = score;
-      saveFallbackData(data);
+      await saveFallbackData(data);
     }
     return user;
   }
@@ -179,7 +162,7 @@ class CloudflareDB {
     }
     
     // Fallback
-    const data = getFallbackData();
+    const data = await getFallbackData();
     return data.scores[userId];
   }
 
@@ -191,7 +174,7 @@ class CloudflareDB {
     }
     
     // Fallback
-    const data = getFallbackData();
+    const data = await getFallbackData();
     const scores = Object.values(data.scores);
     return scores.sort((a, b) => b.score - a.score);
   }
@@ -254,7 +237,7 @@ class CloudflareDB {
     }
     
     // Fallback
-    const data = getFallbackData();
+    const data = await getFallbackData();
     const record = data.scores[userId];
     if (!record) {
       throw new Error(`Score record not found for user: ${userId}`);
@@ -283,7 +266,7 @@ class CloudflareDB {
     const updatedAt = new Date().toISOString();
     record.updatedAt = updatedAt;
     data.scores[userId] = record;
-    saveFallbackData(data);
+    await saveFallbackData(data);
     return record;
   }
 
@@ -306,7 +289,7 @@ class CloudflareDB {
     }
     
     // Fallback
-    const data = getFallbackData();
+    const data = await getFallbackData();
     
     // ล้างรหัสเก่าที่หมดอายุแล้ว
     const now = Date.now();
@@ -323,7 +306,7 @@ class CloudflareDB {
       redirectUri,
       expiresAt
     };
-    saveFallbackData(data);
+    await saveFallbackData(data);
     return code;
   }
 
@@ -343,7 +326,7 @@ class CloudflareDB {
     }
     
     // Fallback
-    const data = getFallbackData();
+    const data = await getFallbackData();
     const auth = data.authCodes[code];
     if (!auth) return null;
     
@@ -352,7 +335,7 @@ class CloudflareDB {
     }
     
     delete data.authCodes[code];
-    saveFallbackData(data);
+    await saveFallbackData(data);
     return auth.userId;
   }
 
@@ -375,7 +358,7 @@ class CloudflareDB {
     }
     
     // Fallback
-    const data = getFallbackData();
+    const data = await getFallbackData();
     
     // ล้างโทเคนที่หมดอายุแล้ว
     const now = Date.now();
@@ -391,7 +374,7 @@ class CloudflareDB {
       clientId,
       expiresAt
     };
-    saveFallbackData(data);
+    await saveFallbackData(data);
     return token;
   }
 
@@ -407,7 +390,7 @@ class CloudflareDB {
     }
     
     // Fallback
-    const data = getFallbackData();
+    const data = await getFallbackData();
     const accessToken = data.accessTokens[token];
     if (!accessToken || accessToken.expiresAt < Date.now()) {
       return null;
