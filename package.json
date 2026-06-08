@@ -8,9 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "test": "npx tsx --test src/lib/game-logic.test.ts",
-    "open-next": "open-next build",
-    "preview": "wrangler dev .open-next/worker.js",
-    "deploy": "npm run open-next && wrangler deploy"
+    "open-next": "opennextjs-cloudflare build",
+    "preview": "opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.19.11",
