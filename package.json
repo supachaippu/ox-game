@@ -8,9 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "test": "npx tsx --test src/lib/game-logic.test.ts",
-    "open-next": "npx @cloudflare/next-on-pages",
-    "preview": "npx @cloudflare/next-on-pages && wrangler pages dev .vercel/output/static --d1 DB",
-    "deploy": "npx @cloudflare/next-on-pages && wrangler pages deploy .vercel/output/static"
+    "open-next": "npx @cloudflare/next-on-pages && rm -rf build_output && mv .vercel/output/static build_output && rm -rf .vercel",
+    "preview": "npm run open-next && wrangler pages dev build_output --d1 DB",
+    "deploy": "npm run open-next && wrangler pages deploy build_output"
   },
   "dependencies": {
     "next": "16.2.7",

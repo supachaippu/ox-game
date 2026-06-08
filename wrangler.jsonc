@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "ox-game",
-  "pages_build_output_dir": ".vercel/output/static",
+  "pages_build_output_dir": "build_output",
   "compatibility_date": "2024-12-30",
   "compatibility_flags": [
     "nodejs_compat"
