@@ -112,14 +112,14 @@ export default function Game() {
         let selectedDiff: 'easy' | 'medium' | 'hard';
         let strategyText = '';
 
-        if (roll < 0.35) {
-          selectedDiff = 'easy'; // 35% โอกาสเดินสุ่ม
+        if (roll < 0.50) {
+          selectedDiff = 'easy'; // 50% โอกาสเดินสุ่ม
           strategyText = 'ระดับง่าย 🎲 (สุ่มตำแหน่งเดิน)';
-        } else if (roll < 0.70) {
-          selectedDiff = 'medium'; // 35% โอกาสเดินป้องกัน/บล็อก
+        } else if (roll < 0.80) {
+          selectedDiff = 'medium'; // 30% โอกาสเดินป้องกัน/บล็อก
           strategyText = 'ระดับปานกลาง 🛡️ (ป้องกันและเน้นบล็อกหมาก)';
         } else {
-          selectedDiff = 'hard'; // 30% โอกาสเดินแบบไร้พ่ายด้วย Minimax AI
+          selectedDiff = 'hard'; // 20% โอกาสเดินแบบไร้พ่ายด้วย Minimax AI
           strategyText = 'ระดับยากสุด 🧠 (ใช้สมองกลคำนวณแบบไร้พ่าย Minimax)';
         }
         setLastBotStrategy(strategyText);
@@ -352,6 +352,11 @@ export default function Game() {
           <button className="btn btn-primary" onClick={resetGame} style={{ marginTop: '1rem', width: '100%', maxWidth: '340px' }}>
             🔄 {gameResult ? 'เริ่มเล่นเกมใหม่' : 'เริ่มเกมใหม่ทั้งหมด'}
           </button>
+
+          {/* แสดงสถานะกลยุทธ์บอทตาที่แล้ว */}
+          <div style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            🤖 บอทตาที่ผ่านมา: <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{lastBotStrategy}</span>
+          </div>
         </div>
       </div>
     </div>

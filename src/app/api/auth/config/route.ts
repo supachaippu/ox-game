@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 export async function GET() {
   // ตรวจสอบว่าผู้ใช้ตั้งค่า GitHub Client ID และ Secret ใน env หรือไม่
