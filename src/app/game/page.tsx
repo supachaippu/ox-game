@@ -353,10 +353,6 @@ export default function Game() {
             🔄 {gameResult ? 'เริ่มเล่นเกมใหม่' : 'เริ่มเกมใหม่ทั้งหมด'}
           </button>
 
-          {/* แสดงสถานะกลยุทธ์บอทตาที่แล้ว */}
-          <div style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            🤖 บอทตาที่ผ่านมา: <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{lastBotStrategy}</span>
-          </div>
         </div>
       </div>
     </div>
