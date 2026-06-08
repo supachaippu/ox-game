@@ -71,46 +71,23 @@ export async function POST(request: Request) {
         username: user.username,
       };
     } else {
-      // 1. เรียกแลกเปลี่ยน Token จาก Mock OAuth Server
-      const tokenResponse = await fetch(`${baseUrl}/api/oauth/token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          grant_type: 'authorization_code',
-          code,
-          redirect_uri: `${baseUrl}/oauth/callback`,
-          client_id: 'ox-game-client',
-          client_secret: 'ox-game-secret',
-        }),
-      });
-
-      const tokenData = await tokenResponse.json();
-      if (!tokenResponse.ok) {
-        return NextResponse.json({ error: tokenData.error || 'Token exchange failed' }, { status: tokenResponse.status });
+      // Mock OAuth Flow: ตรวจสอบ code โดยตรงผ่าน db แทนการ fetch ไปที่ API ภายใน
+      // (เพื่อให้ In-Memory Fallback ทำงานได้ถูกต้องในโหมด npm run dev)
+      const userId = await db.validateAndConsumeAuthCode(code, 'ox-game-client', `${baseUrl}/oauth/callback`);
+      if (!userId) {
+        return NextResponse.json({ error: 'invalid_grant', error_description: 'Invalid or expired authorization code' }, { status: 400 });
       }
 
-      const accessToken = tokenData.access_token;
-
-      // 2. เรียกดูโปรไฟล์ผู้ใช้งานจาก UserInfo Endpoint
-      const userinfoResponse = await fetch(`${baseUrl}/api/oauth/userinfo`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-
-      const mockUserData = await userinfoResponse.json();
-      if (!userinfoResponse.ok) {
-        return NextResponse.json({ error: 'Failed to fetch user profile' }, { status: userinfoResponse.status });
+      const user = await db.getUser(userId);
+      if (!user) {
+        return NextResponse.json({ error: 'Failed to fetch user profile' }, { status: 400 });
       }
 
+      tokenToStore = await db.createAccessToken(userId, 'ox-game-client');
       userData = {
-        sub: mockUserData.sub,
-        username: mockUserData.username,
+        sub: user.id,
+        username: user.username,
       };
-      tokenToStore = accessToken;
     }
 
     // 3. บันทึกข้อมูลเซสชันลงใน HTTP-Only Cookie
