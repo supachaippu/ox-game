@@ -6,11 +6,15 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "ox-game-db",
-      "database_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+      "database_id": "1dc81e70-c382-47f4-8a02-989a412792d4"
     }
   ]
 }
