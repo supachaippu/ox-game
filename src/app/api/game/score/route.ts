@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     const sessionData = JSON.parse(sessionCookie.value);
     
     // ตรวจสอบความถูกต้องของ Token
-    const userId = db.validateAccessToken(sessionData.token);
+    const userId = await db.validateAccessToken(sessionData.token);
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized: Session expired' }, { status: 401 });
     }
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     }
 
     // 3. ปรับปรุงคะแนนในฐานข้อมูลจำลอง
-    const updatedRecord = db.updateGameResult(userId, result);
+    const updatedRecord = await db.updateGameResult(userId, result);
 
     return NextResponse.json({
       success: true,

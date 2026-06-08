@@ -21,11 +21,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid or missing redirect_uri' }, { status: 400 });
     }
 
-    // ดึงหรือสร้าง User ในไฟล์ JSON
-    const user = db.getOrCreateUser(username);
+    // ดึงหรือสร้าง User ใน D1
+    const user = await db.getOrCreateUser(username);
 
     // สร้าง Authorization Code
-    const code = db.createAuthCode(user.id, client_id, redirect_uri);
+    const code = await db.createAuthCode(user.id, client_id, redirect_uri);
 
     // ประกอบ URL สำหรับดีดกลับ (Callback URL)
     const redirectUrl = new URL(redirect_uri);

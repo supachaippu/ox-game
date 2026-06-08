@@ -1,0 +1,35 @@
+-- SQLite D1 Database Schema for OX Game
+
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  username TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS scores (
+  userId TEXT PRIMARY KEY,
+  username TEXT NOT NULL,
+  wins INTEGER DEFAULT 0,
+  losses INTEGER DEFAULT 0,
+  draws INTEGER DEFAULT 0,
+  score INTEGER DEFAULT 0,
+  currentStreak INTEGER DEFAULT 0,
+  maxStreak INTEGER DEFAULT 0,
+  bonusPoints INTEGER DEFAULT 0,
+  updatedAt TEXT NOT NULL,
+  FOREIGN KEY (userId) REFERENCES users (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS authCodes (
+  code TEXT PRIMARY KEY,
+  userId TEXT NOT NULL,
+  clientId TEXT NOT NULL,
+  redirectUri TEXT NOT NULL,
+  expiresAt INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS accessTokens (
+  token TEXT PRIMARY KEY,
+  userId TEXT NOT NULL,
+  clientId TEXT NOT NULL,
+  expiresAt INTEGER NOT NULL
+);

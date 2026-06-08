@@ -40,13 +40,13 @@ export async function POST(request: Request) {
     }
 
     // ตรวจสอบและใช้งาน Code
-    const userId = db.validateAndConsumeAuthCode(code, client_id, redirect_uri);
+    const userId = await db.validateAndConsumeAuthCode(code, client_id, redirect_uri);
     if (!userId) {
       return NextResponse.json({ error: 'invalid_grant', error_description: 'Invalid or expired authorization code' }, { status: 400 });
     }
 
     // สร้าง Access Token
-    const accessToken = db.createAccessToken(userId, client_id);
+    const accessToken = await db.createAccessToken(userId, client_id);
 
     return NextResponse.json({
       access_token: accessToken,

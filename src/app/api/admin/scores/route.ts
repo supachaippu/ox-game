@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 
 export async function GET() {
   try {
-    const scores = db.getAllScores();
+    const scores = await db.getAllScores();
     return NextResponse.json({
       success: true,
       scores,

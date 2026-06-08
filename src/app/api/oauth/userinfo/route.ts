@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     }
 
     const token = authHeader.substring(7); // ดึงค่าหลัง "Bearer "
-    const userId = db.validateAccessToken(token);
+    const userId = await db.validateAccessToken(token);
 
     if (!userId) {
       return new Response(JSON.stringify({ error: 'invalid_token', error_description: 'Token expired or invalid' }), {
@@ -27,7 +27,7 @@ export async function GET(request: Request) {
       });
     }
 
-    const user = db.getUser(userId);
+    const user = await db.getUser(userId);
     if (!user) {
       return NextResponse.json({ error: 'user_not_found' }, { status: 404 });
     }

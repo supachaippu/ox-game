@@ -56,11 +56,11 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Failed to fetch GitHub user profile' }, { status: 400 });
       }
 
-      // ดึงหรือสร้าง User ในไฟล์ JSON
-      const user = db.getOrCreateUser(gitUserData.login);
+      // ดึงหรือสร้าง User ในไฟล์ D1
+      const user = await db.getOrCreateUser(gitUserData.login);
 
       // สร้าง Local Access Token สำหรับใช้งานเซสชันภายในแอป
-      tokenToStore = db.createAccessToken(user.id, 'github-oauth');
+      tokenToStore = await db.createAccessToken(user.id, 'github-oauth');
       userData = {
         sub: user.id,
         username: user.username,
@@ -142,7 +142,7 @@ export async function GET() {
     const sessionData = JSON.parse(sessionCookie.value);
     
     // ตรวจสอบว่า Access Token ยังคงใช้งานได้จริงในระบบ
-    const userId = db.validateAccessToken(sessionData.token);
+    const userId = await db.validateAccessToken(sessionData.token);
     if (!userId) {
       // โทเค็นหมดอายุแล้ว ลบเซสชันคุกกี้ทิ้ง
       const response = NextResponse.json({ loggedIn: false });
@@ -150,12 +150,12 @@ export async function GET() {
       return response;
     }
 
-    const user = db.getUser(userId);
+    const user = await db.getUser(userId);
     if (!user) {
       return NextResponse.json({ loggedIn: false });
     }
 
-    const score = db.getScore(userId);
+    const score = await db.getScore(userId);
 
     return NextResponse.json({
       loggedIn: true,
