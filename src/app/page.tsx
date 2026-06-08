@@ -1,65 +1,117 @@
-import Image from "next/image";
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function Home() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [username, setUsername] = useState('');
+
+  const [authState, setAuthState] = useState<{ useGitHub: boolean; clientId: string } | null>(null);
+
+  // ตรวจสอบเซสชันการเข้าสู่ระบบปัจจุบัน
+  useEffect(() => {
+    async function checkSession() {
+      try {
+        const res = await fetch('/api/auth/session');
+        const data = await res.json();
+        if (data.loggedIn) {
+          setLoggedIn(true);
+          setUsername(data.user.username);
+          // ดีดตัวไปหน้าเกมทันทีถ้าล็อกอินแล้ว
+          router.push('/game');
+        }
+      } catch (err) {
+        console.error('Check session error:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function fetchConfig() {
+      try {
+        const res = await fetch('/api/auth/config');
+        const data = await res.json();
+        setAuthState(data);
+      } catch (err) {
+        console.error('Fetch auth config error:', err);
+      }
+    }
+
+    checkSession();
+    fetchConfig();
+  }, [router]);
+
+  // ฟังก์ชันเริ่มกระบวนการ OAuth 2.0 Authorization Code Flow
+  const handleLogin = () => {
+    const useGitHub = authState?.useGitHub ?? false;
+    const clientId = authState?.clientId ?? 'ox-game-client';
+    const redirectUri = `${window.location.origin}/oauth/callback`;
+    const state = Math.random().toString(36).substring(2, 15);
+    const scope = useGitHub ? 'read:user' : 'profile';
+
+    // บันทึก state ไว้ใน Session Storage เพื่อนำไปตรวจสอบใน Callback
+    sessionStorage.setItem('oauth_state', state);
+
+    let authUrl = '';
+    if (useGitHub) {
+      // พาผู้ใช้งานไปยังหน้าเว็บล็อกอินจริงของ GitHub
+      authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&state=${state}`;
+    } else {
+      // พาผู้ใช้งานไปยังหน้า Consent Page จำลองของ OAuth Server ในเครื่อง
+      authUrl = `/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&state=${state}`;
+    }
+    router.push(authUrl);
+  };
+
+  if (loading) {
+    return (
+      <div className="container flex-center flex-column" style={{ minHeight: '80vh' }}>
+        <div className="glass-panel text-center">
+          <div className="input-label" style={{ fontSize: '1.2rem', animation: 'pulse 1s infinite alternate' }}>
+            กำลังโหลดระบบ...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isGitHubMode = authState?.useGitHub ?? false;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="container flex-center flex-column" style={{ minHeight: '90vh' }}>
+      <div className="glass-panel text-center" style={{ maxWidth: '450px', width: '100%', textAlign: 'center' }}>
+        {/* โลโก้เกมลอยได้ */}
+        <div className="floating-icon" style={{ fontSize: '5rem', marginBottom: '1rem', display: 'inline-block' }}>
+          ❌⭕
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        
+        <h1 style={{ marginBottom: '1rem' }}>OX Tic-Tac-Toe</h1>
+        <p style={{ marginBottom: '2rem' }}>
+          ท้าทายความสามารถของคุณกับบอท AI สุดแกร่ง สะสมคะแนนไต่เต้าลีดเดอร์บอร์ด และพิชิตโบนัสชนะ 3 ครั้งติดต่อกัน!
+        </p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <button className="btn btn-primary" onClick={handleLogin}>
+            {isGitHubMode ? '🐱 เข้าสู่ระบบด้วย GitHub OAuth' : '⚡ เข้าสู่ระบบเพื่อเริ่มเล่น (Demo Mode)'}
+          </button>
+          
+          <Link href="/admin" className="btn btn-secondary">
+            📊 ดูอันดับคะแนนผู้เล่นทั้งหมด
+          </Link>
         </div>
-      </main>
+
+        <div style={{ marginTop: '2rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+          {isGitHubMode ? (
+            <span style={{ color: 'var(--color-secondary)' }}>● กำลังใช้ระบบความปลอดภัยเชื่อมต่อกับ GitHub OAuth จริง</span>
+          ) : (
+            <span>⚡ โหมดสาธิต: ยืนยันตัวตนจำลองภายในตัวแอป (ตั้งค่า .env เพื่อเปิดใช้ GitHub OAuth จริง)</span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎮 Web Application เกม OX (Tic-Tac-Toe) พร้อมระบบ OAuth 2.0
 
-## Getting Started
+โปรเจกต์นี้เป็นเว็บแอปพลิเคชันสำหรับเล่นเกม OX (Tic-Tac-Toe) แข่งกับบอท พัฒนาด้วย **Next.js (App Router)**, **TypeScript** และจัดแต่งสไตล์อินเทอร์เฟซแบบพรีเมียมด้วย **Vanilla CSS** โดยคำนึงถึงแนวทางการเขียนโค้ดที่เป็นระบบ (Clean Code), ความปลอดภัย และการทดสอบซอฟต์แวร์ (Unit Testing) เพื่อใช้ส่งประเมินผลงานสำหรับสมัครงานโดยเฉพาะ
 
-First, run the development server:
+---
+
+## ✨ คุณสมบัติเด่นของโครงการ (Key Features)
+
+1.  **🔌 ระบบล็อกอิน OAuth 2.0 (Hybrid Mode):**
+    *   **GitHub OAuth (ของจริง):** ล็อกอินยืนยันตัวตนจริงผ่านการเชื่อมต่อ API ของ GitHub (เพียงกำหนดค่าใน `.env`)
+    *   **Local Mock OAuth 2.0 (ของจำลอง):** โหมด Demo สำหรับผู้ตรวจข้อสอบ รันเล่นออฟไลน์ได้ 100% ทันทีโดยไม่ต้องตั้งค่าใด ๆ (กรอกชื่อผู้ใช้สุ่มแล้วจำลองการส่ง Authorization Code ➔ Token Exchange ➔ UserInfo ครบถ้วนตามสเปก RFC 6749)
+2.  **🔒 ความปลอดภัยระดับมาตรฐานอุตสาหกรรม:**
+    *   **Secure Session Management:** เก็บรหัสผ่านจำลองและข้อมูลล็อกอินในคุกกี้ฝั่งหลังบ้านแบบ **HTTP-Only Cookie** ป้องกันการโดนขโมยผ่าน XSS
+    *   **CSRF Protection:** มีระบบตรวจสอบความปลอดภัยด้วยพารามิเตอร์ `state` ป้องกันภัยคุกคามข้ามเว็บไซต์
+3.  **🤖 บอทคู่แข่ง AI อัจฉริยะ (3 ระดับความยาก):**
+    *   **ง่าย (Easy):** สุ่มเลือกตำแหน่งเดิน
+    *   **ปานกลาง (Medium):** บล็อกตำแหน่งที่คู่แข่งกำลังจะชนะ และกดชนะในช่องที่มีโอกาส
+    *   **ฉลาดสุด (Hard - Minimax):** ใช้ **Minimax Algorithm** วิเคราะห์ผลลัพธ์ล่วงหน้าเต็มตาราง บอทจะไม่มีวันแพ้ผู้เล่น (ทำได้ดีที่สุดคือเสมอ)
+4.  **🏆 ระบบคะแนนและโบนัสสตรีค (Streaks):**
+    *   ผู้เล่นชนะ: **+1 คะแนน** | ผู้เล่นแพ้: **-1 คะแนน** | เสมอ: **0 คะแนน**
+    *   **โบนัสพิเศษ:** ชนะติดต่อกัน (Win Streak) ครบ 3 ครั้ง จะได้รับคะแนนโบนัสเพิ่มพิเศษอีก **+1 คะแนน** (พร้อมรีเซ็ตสตรีคสัญลักษณ์ไฟ 🔥 เริ่มนับรอบใหม่)
+5.  **📊 แดชบอร์ดตรวจสอบคะแนน (Leaderboard):**
+    *   มีหน้าจอแสดงอันดับคะแนนผู้เล่นทั้งหมด พร้อมแถบค้นหาแบบตอบสนอง
+    *   สามารถกดจัดเรียงข้อมูลตามหัวตารางได้ไดนามิก (เรียงตามคะแนนรวม, จำนวนครั้งชนะ, จำนวนครั้งแพ้ หรือสตรีคสูงสุด)
+6.  **🎨 การออกแบบระดับพรีเมียม (UI/UX):**
+    *   ธีมมืด (Dark Mode) ผสมผสาน Glassmorphism (การ์ดกระจกโปร่งแสง) พร้อมแอนิเมชันปุ่มเดินหมากและตาราง
+    *   มีระบบสังเคราะห์เสียงซาวด์เอฟเฟกต์ย้อนยุคด้วย **Web Audio API** (ไม่ต้องใช้ไฟล์เสียงภายนอก รันออฟไลน์ได้ไร้กังวล)
+
+---
+
+## 🛠️ โครงสร้างไฟล์และสถาปัตยกรรม (Architecture)
+
+โปรเจกต์แยกตรรกะระบบ (Core Logic) และส่วนแสดงผล (UI) ออกจากกันอย่างชัดเจนตามหลักการ Clean Architecture:
+
+*   📂 `src/app/` — หน้าจออินเทอร์เฟซและการทำ Routing ด้วย Next.js App Router
+    *   📄 `page.tsx` — หน้าแรก Splash Page ตรวจสอบเซสชันและนำเข้าสู่ระบบ OAuth
+    *   📂 `oauth/authorize/` — หน้า Consent Page สำหรับโหมดจำลองยืนยันสิทธิ์ข้อมูล
+    *   📂 `oauth/callback/` — หน้าตัวรับสิทธิ์ (OAuth Callback) เพื่อทำการเชื่อมสิทธิ์เข้าระบบ
+    *   📂 `game/` — หน้าสำหรับเล่นเกม OX แผงคะแนนและการปรับสตรีคบอท AI
+    *   📂 `admin/` — หน้า Dashboard ตารางอันดับและเครื่องมือสืบค้นผู้เล่นทั้งหมด
+*   📂 `src/app/api/` — ส่วนของหลังบ้าน API Routes
+    *   📂 `api/auth/config/` — คืนสถานะการเปิดใช้ GitHub OAuth หรือโหมดเดโม
+    *   📂 `api/auth/session/` — จัดการและคืนค่าเซสชันของคุกกี้หลัก
+    *   📂 `api/oauth/` — บริการย่อยสำหรับ Mock OAuth 2.0 Server (`authorize`, `token`, `userinfo`)
+    *   📂 `api/game/score/` — ปรับปรุงสถิติและคะแนนสะสมย้อนหลังของผู้เล่น
+    *   📂 `api/admin/scores/` — คืนค่าชุดข้อมูลคะแนนผู้เล่นทั้งหมด
+*   📂 `src/lib/` — ตรรกะประมวลผลหลังบ้านหลัก
+    *   📄 `db.ts` — ตัวจัดการระบบฐานข้อมูลจำลอง (เขียน/อ่านลงไฟล์ `data/db.json` ปลอดภัยจากปัญหาคอมไพล์)
+    *   📄 `game-utils.ts` — ไฟล์แยกเขียนตรรกะคำนวณชัยชนะ และระบบประมวลผลหมากเดิน AI (Minimax) สะดวกต่อการเขียน Unit Test
+
+---
+
+## 🚀 วิธีการติดตั้งและรันในเครื่อง (Installation & Setup)
+
+1.  **ติดตั้ง dependencies:**
+    ```bash
+    npm install
+    ```
+
+2.  **เปิดรันเซิร์ฟเวอร์สำหรับพัฒนา (Development Server):**
+    ```bash
+    npm run dev
+    ```
+    เข้าใช้งานผ่านเบราว์เซอร์ที่ลิงก์: **[http://localhost:3000](http://localhost:3000)**
+
+---
+
+## 🔑 วิธีการเปิดใช้งานระบบ GitHub OAuth จริง (ไม่บังคับ)
+
+หากต้องการเปลี่ยนจากระบบจำลอง (Mock Mode) เป็นระบบความปลอดภัยจริงผ่าน **GitHub Login**:
+
+1.  เข้าไปที่ GitHub ➔ **Settings** ➔ **Developer Settings** ➔ **OAuth Apps** ➔ กด **Register a new application**
+2.  ตั้งค่าพารามิเตอร์ดังนี้:
+    *   **Homepage URL:** `http://localhost:3000`
+    *   **Authorization callback URL:** `http://localhost:3000/oauth/callback`
+3.  สร้างรหัสลับและคัดลอก **Client ID** และ **Client Secret**
+4.  สร้างไฟล์ชื่อ `.env` หรือ `.env.local` ไว้ที่รากของโปรเจกต์นี้ และเพิ่มข้อมูลลงไป:
+    ```env
+    GITHUB_CLIENT_ID=รหัส_Client_ID_ของคุณ
+    GITHUB_CLIENT_SECRET=รหัส_Client_Secret_ของคุณ
+    ```
+5.  สั่งรันแอปพลิเคชันใหม่อีกครั้ง ปุ่มล็อกอินหน้าแรกจะเปลี่ยนเป็น **"🐱 เข้าสู่ระบบด้วย GitHub OAuth"** และจะเรียกใช้งานสิทธิ์ระบบจริงโดยอัตโนมัติ
+
+---
+
+## 🧪 การรันชุดทดสอบ (Automated Unit Tests)
+
+เราใช้ระบบ Test Runner ที่ติดตั้งในตัวมากับ Node.js ทำให้ผู้ตรวจสามารถทดสอบคุณภาพโค้ดและตรรกะเบื้องหลังได้ทันทีผ่านคำสั่งง่าย ๆ:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm test
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+ชุดทดสอบจะรันและแสดงผลลัพธ์ผ่าน Terminal ยืนยันความถูกต้องของ **ระบบตรวจสอบผู้ชนะ 5 กรณี** และ **ระบบคำนวณหมากเดินของ AI บล็อก/ชนะ 2 กรณี**

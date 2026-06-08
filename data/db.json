@@ -1,0 +1,81 @@
+{
+  "users": [
+    {
+      "id": "bart",
+      "username": "Bart"
+    },
+    {
+      "id": "me",
+      "username": "Me"
+    },
+    {
+      "id": "supachaippu",
+      "username": "supachaippu"
+    }
+  ],
+  "scores": [
+    {
+      "userId": "bart",
+      "username": "Bart",
+      "wins": 0,
+      "losses": 2,
+      "draws": 3,
+      "score": -2,
+      "currentStreak": 0,
+      "maxStreak": 0,
+      "bonusPoints": 0,
+      "updatedAt": "2026-06-08T09:03:17.086Z"
+    },
+    {
+      "userId": "me",
+      "username": "Me",
+      "wins": 1,
+      "losses": 4,
+      "draws": 5,
+      "score": -3,
+      "currentStreak": 1,
+      "maxStreak": 1,
+      "bonusPoints": 0,
+      "updatedAt": "2026-06-08T09:22:48.364Z"
+    },
+    {
+      "userId": "supachaippu",
+      "username": "supachaippu",
+      "wins": 13,
+      "losses": 6,
+      "draws": 4,
+      "score": 9,
+      "currentStreak": 0,
+      "maxStreak": 3,
+      "bonusPoints": 2,
+      "updatedAt": "2026-06-08T09:35:32.192Z"
+    }
+  ],
+  "authCodes": [],
+  "accessTokens": [
+    {
+      "token": "token_ji9tyeal6fb5hh9cc8ng73",
+      "userId": "bart",
+      "clientId": "ox-game-client",
+      "expiresAt": 1780912950363
+    },
+    {
+      "token": "token_9eg3srw6yjsxphdwscjwf",
+      "userId": "me",
+      "clientId": "ox-game-client",
+      "expiresAt": 1780913393267
+    },
+    {
+      "token": "token_ute6ell29ino0ebrt61ixm",
+      "userId": "supachaippu",
+      "clientId": "github-oauth",
+      "expiresAt": 1780914476898
+    },
+    {
+      "token": "token_sfc6kkghyrtkopvnd2imo",
+      "userId": "supachaippu",
+      "clientId": "github-oauth",
+      "expiresAt": 1780914697677
+    }
+  ]
+}
