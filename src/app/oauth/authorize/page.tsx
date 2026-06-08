@@ -110,7 +110,7 @@ function AuthorizeForm() {
             type="text"
             id="username"
             className="text-input"
-            placeholder="เช่น Player1, 9Arm"
+            placeholder="เช่น Player1, GamerTH"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             disabled={loading || !!error}
