@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
+export const runtime = 'edge';
+
 export async function POST(request: Request) {
   try {
     let grant_type, code, redirect_uri, client_id, client_secret;

@@ -1,4 +1,4 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { getRequestContext } from "@cloudflare/next-on-pages";
 
 // อินเทอร์เฟซโครงสร้างข้อมูล
 export interface User {
@@ -35,10 +35,10 @@ export interface AccessToken {
 }
 
 function getDB() {
-  const context = getCloudflareContext();
+  const context = getRequestContext();
   const env = context?.env as any;
   if (!env || !env.DB) {
-    throw new Error("Cloudflare D1 Database binding 'DB' is missing. Make sure wrangler.jsonc contains the correct binding and you are running under Wrangler/OpenNext context.");
+    throw new Error("Cloudflare D1 Database binding 'DB' is missing. Make sure you are running under Next-on-Pages context and D1 binding is configured.");
   }
   return env.DB;
 }
